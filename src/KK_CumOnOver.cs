@@ -11,7 +11,7 @@ namespace CumOnOver
 	{
 		public const string Name = "CumOnOver";
 		public const string GUID = "madevil.kk.CumOnOver";
-		public const string Version = "1.1.0.0";
+		public const string Version = "1.2.0.0";
 
 		internal static new ManualLogSource Logger;
 		internal static MonoBehaviour Instance;
@@ -62,11 +62,12 @@ namespace CumOnOver
 					__instance.UpdateClothesSiru(8, frontTop, frontBot, downTop, downBot);
 				}
 
-				for (int i = 0; i < __instance.objAccessory.Length; i++)
+				ChaAccessoryComponent[] chaAccessories = __instance.GetComponentsInChildren<ChaAccessoryComponent>();
+				for (int i = 0; i < chaAccessories.Length; i++)
 				{
-					if ((__instance.objAccessory[i] != null) && (__instance.objAccessory[i].GetComponent<ChaAccessoryComponent>() != null))
+					ChaAccessoryComponent chaAccessory = chaAccessories[i];
+					if (chaAccessory.gameObject.name.StartsWith("ca_slot"))
 					{
-						ChaAccessoryComponent chaAccessory = __instance.objAccessory[i].GetComponent<ChaAccessoryComponent>();
 						for (int j = 0; j < chaAccessory.rendNormal.Length; j++)
 						{
 							Renderer renderer = chaAccessory.rendNormal[j];
