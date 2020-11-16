@@ -3,15 +3,18 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
+using KK_Plugins.MaterialEditor;
 
 namespace CumOnOver
 {
 	[BepInPlugin(GUID, Name, Version)]
+	[BepInDependency(KKAPI.KoikatuAPI.GUID)]
+	[BepInDependency(MaterialEditorPlugin.GUID)]
 	public class CumOnOver : BaseUnityPlugin
 	{
 		public const string Name = "CumOnOver";
 		public const string GUID = "madevil.kk.CumOnOver";
-		public const string Version = "1.2.0.0";
+		public const string Version = "1.2.1.0";
 
 		internal static new ManualLogSource Logger;
 		internal static MonoBehaviour Instance;
@@ -22,6 +25,9 @@ namespace CumOnOver
 			Instance = this;
 
 			Harmony.CreateAndPatchAll(typeof(Hooks));
+
+			if (Application.dataPath.EndsWith("CharaStudio_Data"))
+				Harmony.CreateAndPatchAll(typeof(HooksStudio));
 		}
 
 		internal class Hooks
@@ -94,6 +100,23 @@ namespace CumOnOver
 						}
 					}
 				}
+			}
+		}
+
+		internal class HooksStudio
+		{
+			[HarmonyPriority(Priority.Last)]
+			[HarmonyPostfix, HarmonyPatch(typeof(MaterialEditorCharaController), "LoadData")]
+			internal static void MaterialEditorCharaController_LoadData_Postfix(MaterialEditorCharaController __instance, bool clothes, bool accessories, bool hair)
+			{
+				Instance.StartCoroutine(MaterialEditorCharaController_LoadData_Coroutine(__instance.ChaControl));
+			}
+
+			internal static IEnumerator MaterialEditorCharaController_LoadData_Coroutine(ChaControl chaCtrl)
+			{
+				yield return new WaitForEndOfFrame();
+				yield return new WaitForEndOfFrame();
+				Instance.StartCoroutine(Hooks.ChaControl_UpdateClothesSiru_Coroutine(chaCtrl, true));
 			}
 		}
 	}
