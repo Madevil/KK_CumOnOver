@@ -3,18 +3,18 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
-using KK_Plugins.MaterialEditor;
+using KKAPI.Chara;
 
 namespace CumOnOver
 {
 	[BepInPlugin(GUID, Name, Version)]
-	[BepInDependency(KKAPI.KoikatuAPI.GUID)]
-	[BepInDependency(MaterialEditorPlugin.GUID)]
+	[BepInDependency("marco.kkapi")]
+	[BepInDependency("com.deathweasel.bepinex.materialeditor")]
 	public class CumOnOver : BaseUnityPlugin
 	{
 		public const string Name = "CumOnOver";
 		public const string GUID = "madevil.kk.CumOnOver";
-		public const string Version = "1.2.1.0";
+		public const string Version = "1.5.0.0";
 
 		internal static new ManualLogSource Logger;
 		internal static MonoBehaviour Instance;
@@ -24,90 +24,76 @@ namespace CumOnOver
 			Logger = base.Logger;
 			Instance = this;
 
-			Harmony.CreateAndPatchAll(typeof(Hooks));
+			Harmony HooksInstance = Harmony.CreateAndPatchAll(typeof(Hooks));
 
 			if (Application.dataPath.EndsWith("CharaStudio_Data"))
-				Harmony.CreateAndPatchAll(typeof(HooksStudio));
+			{
+				BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("com.deathweasel.bepinex.materialeditor", out PluginInfo PluginInfo);
+				if (PluginInfo?.Instance != null)
+				{
+					System.Type MaterialEditorCharaController = (PluginInfo.Instance.GetType()).Assembly.GetType("KK_Plugins.MaterialEditor.MaterialEditorCharaController");
+					HooksInstance.Patch(MaterialEditorCharaController.GetMethod("LoadData", AccessTools.all, null, new[] { typeof(bool), typeof(bool), typeof(bool) }, null), postfix: new HarmonyMethod(typeof(HooksStudio), nameof(HooksStudio.MaterialEditorCharaController_LoadData_Postfix)));
+				}
+			}
 		}
 
 		internal class Hooks
 		{
 			[HarmonyPriority(Priority.Last)]
-			[HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "SetSiruFlags")]
-			internal static void ChaControl_SetSiruFlags_Postfix(ChaControl __instance, ChaFileDefine.SiruParts parts, byte lv)
+			[HarmonyPostfix, HarmonyPatch(typeof(ChaControl), nameof(ChaControl.SetSiruFlags), new[] { typeof(ChaFileDefine.SiruParts), typeof(byte) })]
+			internal static void ChaControl_SetSiruFlags_Postfix(ChaControl __instance)
 			{
-				if (parts == ChaFileDefine.SiruParts.SiruKao)
-					Instance.StartCoroutine(ChaControl_UpdateClothesSiru_Coroutine(__instance, true));
+				Instance.StartCoroutine(ChaControl_UpdateClothesSiru_Coroutine(__instance));
 			}
 
 			[HarmonyPriority(Priority.Last)]
-			[HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "UpdateClothesSiru")]
-			internal static void ChaControl_UpdateClothesSiru_Postfix(ChaControl __instance, int kind, float frontTop, float frontBot, float downTop, float downBot)
+			[HarmonyPostfix, HarmonyPatch(typeof(ChaControl), nameof(ChaControl.UpdateClothesSiru), new[] { typeof(int), typeof(float), typeof(float), typeof(float), typeof(float) })]
+			internal static void ChaControl_UpdateClothesSiru_Postfix(ChaControl __instance, int __0)
 			{
-				if (kind == 0)
+				if (__0 == 0)
 					Instance.StartCoroutine(ChaControl_UpdateClothesSiru_Coroutine(__instance));
 			}
 
-			internal static IEnumerator ChaControl_UpdateClothesSiru_Coroutine(ChaControl __instance, bool skip = false)
+			internal static IEnumerator ChaControl_UpdateClothesSiru_Coroutine(ChaControl __instance)
 			{
-				// trick from MakerOptimizations, seems only works with 2 lines
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
 
-				float face = __instance.fileStatus.siruLv[(int) ChaFileDefine.SiruParts.SiruKao];
-				float frontTop = __instance.fileStatus.siruLv[(int) ChaFileDefine.SiruParts.SiruFrontUp];
-				float frontBot = __instance.fileStatus.siruLv[(int) ChaFileDefine.SiruParts.SiruFrontDown];
-				float downTop = __instance.fileStatus.siruLv[(int) ChaFileDefine.SiruParts.SiruBackUp];
-				float downBot = __instance.fileStatus.siruLv[(int) ChaFileDefine.SiruParts.SiruBackDown];
-
-				if (!skip)
+				ChaClothesComponent[] chaClothes = __instance.GetComponentsInChildren<ChaClothesComponent>();
+				foreach (ChaClothesComponent part in chaClothes)
 				{
-					__instance.UpdateClothesSiru(4, frontTop, frontBot, downTop, downBot);
-					__instance.UpdateClothesSiru(6, frontTop, frontBot, downTop, downBot);
-					__instance.UpdateClothesSiru(7, frontTop, frontBot, downTop, downBot);
-					__instance.UpdateClothesSiru(8, frontTop, frontBot, downTop, downBot);
+					Renderer[] renders = part.GetComponentsInChildren<Renderer>();
+					for (int j = 0; j < renders.Length; j++)
+						ApplyEffect(__instance, renders[j]);
 				}
 
 				ChaAccessoryComponent[] chaAccessories = __instance.GetComponentsInChildren<ChaAccessoryComponent>();
-				for (int i = 0; i < chaAccessories.Length; i++)
+				foreach (ChaAccessoryComponent part in chaAccessories)
 				{
-					ChaAccessoryComponent chaAccessory = chaAccessories[i];
-					if (chaAccessory.gameObject.name.StartsWith("ca_slot"))
+					if (part.gameObject.name.StartsWith("ca_slot"))
 					{
-						for (int j = 0; j < chaAccessory.rendNormal.Length; j++)
-						{
-							Renderer renderer = chaAccessory.rendNormal[j];
-							if ((renderer != null) && (renderer.material != null))
-							{
-								renderer.material.SetFloat(ChaShader._liquidface, face);
-								renderer.material.SetFloat(ChaShader._liquidftop, frontTop);
-								renderer.material.SetFloat(ChaShader._liquidfbot, frontBot);
-								renderer.material.SetFloat(ChaShader._liquidbtop, downTop);
-								renderer.material.SetFloat(ChaShader._liquidbbot, downBot);
-							}
-						}
-						for (int j = 0; j < chaAccessory.rendAlpha.Length; j++)
-						{
-							Renderer renderer = chaAccessory.rendAlpha[j];
-							if ((renderer != null) && (renderer.material != null))
-							{
-								renderer.material.SetFloat(ChaShader._liquidface, face);
-								renderer.material.SetFloat(ChaShader._liquidftop, frontTop);
-								renderer.material.SetFloat(ChaShader._liquidfbot, frontBot);
-								renderer.material.SetFloat(ChaShader._liquidbtop, downTop);
-								renderer.material.SetFloat(ChaShader._liquidbbot, downBot);
-							}
-						}
+						Renderer[] renders = part.GetComponentsInChildren<Renderer>();
+						for (int j = 0; j < renders.Length; j++)
+							ApplyEffect(__instance, renders[j]);
 					}
 				}
+			}
+
+			internal static void ApplyEffect(ChaControl chaCtrl, Renderer renderer)
+			{
+				if ((renderer == null) || (renderer.material == null)) return;
+
+				renderer.material.SetFloat(ChaShader._liquidface, chaCtrl.fileStatus.siruLv[0]);
+				renderer.material.SetFloat(ChaShader._liquidftop, chaCtrl.fileStatus.siruLv[1]);
+				renderer.material.SetFloat(ChaShader._liquidfbot, chaCtrl.fileStatus.siruLv[2]);
+				renderer.material.SetFloat(ChaShader._liquidbtop, chaCtrl.fileStatus.siruLv[3]);
+				renderer.material.SetFloat(ChaShader._liquidbbot, chaCtrl.fileStatus.siruLv[4]);
 			}
 		}
 
 		internal class HooksStudio
 		{
-			[HarmonyPriority(Priority.Last)]
-			[HarmonyPostfix, HarmonyPatch(typeof(MaterialEditorCharaController), "LoadData")]
-			internal static void MaterialEditorCharaController_LoadData_Postfix(MaterialEditorCharaController __instance, bool clothes, bool accessories, bool hair)
+			internal static void MaterialEditorCharaController_LoadData_Postfix(CharaCustomFunctionController __instance)
 			{
 				Instance.StartCoroutine(MaterialEditorCharaController_LoadData_Coroutine(__instance.ChaControl));
 			}
@@ -116,7 +102,7 @@ namespace CumOnOver
 			{
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
-				Instance.StartCoroutine(Hooks.ChaControl_UpdateClothesSiru_Coroutine(chaCtrl, true));
+				Instance.StartCoroutine(Hooks.ChaControl_UpdateClothesSiru_Coroutine(chaCtrl));
 			}
 		}
 	}
