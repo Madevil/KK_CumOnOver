@@ -14,7 +14,7 @@ namespace CumOnOver
 	{
 		public const string Name = "CumOnOver";
 		public const string GUID = "madevil.kk.CumOnOver";
-		public const string Version = "1.5.1.0";
+		public const string Version = "1.5.2.0";
 
 		internal static new ManualLogSource Logger;
 		internal static MonoBehaviour Instance;
@@ -67,25 +67,25 @@ namespace CumOnOver
 				if (__instance == null || __instance.gameObject == null)
 					return;
 
-				ChaClothesComponent[] chaClothes = __instance.GetComponentsInChildren<ChaClothesComponent>();
+				ChaClothesComponent[] chaClothes = __instance.GetComponentsInChildren<ChaClothesComponent>(true);
 				if (chaClothes != null)
 				{
 					foreach (ChaClothesComponent part in chaClothes)
 					{
-						Renderer[] renders = part.GetComponentsInChildren<Renderer>();
+						Renderer[] renders = part.GetComponentsInChildren<Renderer>(true);
 						for (int j = 0; j < renders.Length; j++)
 							ApplyEffect(__instance, renders[j]);
 					}
 				}
 
-				ChaAccessoryComponent[] chaAccessories = __instance.GetComponentsInChildren<ChaAccessoryComponent>();
+				ChaAccessoryComponent[] chaAccessories = __instance.GetComponentsInChildren<ChaAccessoryComponent>(true);
 				if (chaAccessories != null)
 				{
 					foreach (ChaAccessoryComponent part in chaAccessories)
 					{
 						if (part.gameObject.name.StartsWith("ca_slot"))
 						{
-							Renderer[] renders = part.GetComponentsInChildren<Renderer>();
+							Renderer[] renders = part.GetComponentsInChildren<Renderer>(true);
 							for (int j = 0; j < renders.Length; j++)
 								ApplyEffect(__instance, renders[j]);
 						}
