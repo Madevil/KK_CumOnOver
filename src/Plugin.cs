@@ -1,8 +1,13 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+
+using UnityEngine;
+
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
-using UnityEngine;
+
 using KKAPI.Chara;
 
 namespace CumOnOver
@@ -14,7 +19,7 @@ namespace CumOnOver
 	{
 		public const string Name = "CumOnOver";
 		public const string GUID = "madevil.kk.CumOnOver";
-		public const string Version = "1.5.2.0";
+		public const string Version = "1.5.3.0";
 
 		internal static new ManualLogSource Logger;
 		internal static MonoBehaviour Instance;
@@ -29,11 +34,9 @@ namespace CumOnOver
 			if (Application.dataPath.EndsWith("CharaStudio_Data"))
 			{
 				BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("com.deathweasel.bepinex.materialeditor", out PluginInfo PluginInfo);
-				if (PluginInfo?.Instance != null)
-				{
-					System.Type MaterialEditorCharaController = (PluginInfo.Instance.GetType()).Assembly.GetType("KK_Plugins.MaterialEditor.MaterialEditorCharaController");
-					HooksInstance.Patch(MaterialEditorCharaController.GetMethod("LoadData", AccessTools.all, null, new[] { typeof(bool), typeof(bool), typeof(bool) }, null), postfix: new HarmonyMethod(typeof(HooksStudio), nameof(HooksStudio.MaterialEditorCharaController_LoadData_Postfix)));
-				}
+				Type MaterialEditorCharaController = PluginInfo.Instance.GetType().Assembly.GetType("KK_Plugins.MaterialEditor.MaterialEditorCharaController");
+				//HooksInstance.Patch(MaterialEditorCharaController.GetMethod("LoadData", AccessTools.all, null, new[] { typeof(bool), typeof(bool), typeof(bool) }, null), postfix: new HarmonyMethod(typeof(HooksStudio), nameof(HooksStudio.MaterialEditorCharaController_LoadData_Postfix)));
+				HooksInstance.Patch(MaterialEditorCharaController.GetMethod("CorrectTongue", AccessTools.all), postfix: new HarmonyMethod(typeof(HooksStudio), nameof(HooksStudio.MaterialEditorCharaController_LoadData_Postfix)));
 			}
 		}
 
@@ -54,31 +57,30 @@ namespace CumOnOver
 					Instance.StartCoroutine(ChaControl_UpdateClothesSiru_Coroutine(__instance));
 			}
 
-			internal static IEnumerator ChaControl_UpdateClothesSiru_Coroutine(ChaControl __instance)
+			internal static IEnumerator ChaControl_UpdateClothesSiru_Coroutine(ChaControl chaCtrl)
 			{
 				yield return new WaitForEndOfFrame();
 				yield return new WaitForEndOfFrame();
-
-				FuckUnityShit(__instance);
+				ChaControl_UpdateClothesSiru(chaCtrl);
 			}
 
-			internal static void FuckUnityShit(ChaControl __instance)
+			internal static void ChaControl_UpdateClothesSiru(ChaControl chaCtrl)
 			{
-				if (__instance == null || __instance.gameObject == null)
+				if (chaCtrl == null || chaCtrl.gameObject == null)
 					return;
 
-				ChaClothesComponent[] chaClothes = __instance.GetComponentsInChildren<ChaClothesComponent>(true);
+				ChaClothesComponent[] chaClothes = chaCtrl.GetComponentsInChildren<ChaClothesComponent>(true);
 				if (chaClothes != null)
 				{
 					foreach (ChaClothesComponent part in chaClothes)
 					{
 						Renderer[] renders = part.GetComponentsInChildren<Renderer>(true);
 						for (int j = 0; j < renders.Length; j++)
-							ApplyEffect(__instance, renders[j]);
+							ApplyEffect(chaCtrl, renders[j]);
 					}
 				}
 
-				ChaAccessoryComponent[] chaAccessories = __instance.GetComponentsInChildren<ChaAccessoryComponent>(true);
+				ChaAccessoryComponent[] chaAccessories = chaCtrl.GetComponentsInChildren<ChaAccessoryComponent>(true);
 				if (chaAccessories != null)
 				{
 					foreach (ChaAccessoryComponent part in chaAccessories)
@@ -87,7 +89,7 @@ namespace CumOnOver
 						{
 							Renderer[] renders = part.GetComponentsInChildren<Renderer>(true);
 							for (int j = 0; j < renders.Length; j++)
-								ApplyEffect(__instance, renders[j]);
+								ApplyEffect(chaCtrl, renders[j]);
 						}
 					}
 				}
@@ -109,7 +111,8 @@ namespace CumOnOver
 		{
 			internal static void MaterialEditorCharaController_LoadData_Postfix(CharaCustomFunctionController __instance)
 			{
-				Instance.StartCoroutine(MaterialEditorCharaController_LoadData_Coroutine(__instance.ChaControl));
+				ChaControl chaCtrl = __instance.ChaControl;
+				Instance.StartCoroutine(MaterialEditorCharaController_LoadData_Coroutine(chaCtrl));
 			}
 
 			internal static IEnumerator MaterialEditorCharaController_LoadData_Coroutine(ChaControl chaCtrl)
