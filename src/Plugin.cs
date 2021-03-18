@@ -22,7 +22,7 @@ namespace CumOnOver
 	{
 		public const string Name = "CumOnOver";
 		public const string GUID = "madevil.kk.CumOnOver";
-		public const string Version = "2.0.0.0";
+		public const string Version = "2.0.1.0";
 
 		internal static new ManualLogSource Logger;
 		internal static MonoBehaviour Instance;
@@ -93,8 +93,7 @@ namespace CumOnOver
 			Type MaterialEditorCharaController = PluginInfo.Instance.GetType().Assembly.GetType("KK_Plugins.MaterialEditor.MaterialEditorCharaController");
 			Type MaterialEditorHooks = PluginInfo.Instance.GetType().Assembly.GetType("KK_Plugins.MaterialEditor.Hooks");
 
-			HooksInstance.Patch(MaterialEditorCharaController.GetMethod("UpdateSiruEvent", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.Prefix_return_false)));
-			//HooksInstance.Patch(MaterialEditorHooks.GetMethod("ChaControl_UpdateSiru_Postfix", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.Prefix_return_false)));
+			HooksInstance.Patch(MaterialEditorHooks.GetMethod("ChaControl_UpdateSiru_Postfix", AccessTools.all), prefix: new HarmonyMethod(typeof(Hooks), nameof(Hooks.Prefix_return_false)));
 
 			if (Application.dataPath.EndsWith("CharaStudio_Data"))
 			{
