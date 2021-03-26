@@ -22,7 +22,7 @@ namespace CumOnOver
 	{
 		public const string Name = "CumOnOver";
 		public const string GUID = "madevil.kk.CumOnOver";
-		public const string Version = "2.0.1.0";
+		public const string Version = "2.1.0.0";
 
 		internal static new ManualLogSource Logger;
 		internal static MonoBehaviour Instance;
@@ -126,29 +126,6 @@ namespace CumOnOver
 								else if (useG.IndexOf(o.name) >= 0)
 									mat.SetTexture("_liquidmask", liquidmaskG);
 							}
-
-							if (mat.GetTexture(ChaShader._Texture2) == null || CfgLiquidOverride.Value)
-								mat.SetTexture(ChaShader._Texture2, LiquidT);
-							/*
-							Vector2 t2 = mat.GetTextureScale(ChaShader._Texture2);
-							if (t2.x == 0)
-								mat.SetTextureScale(ChaShader._Texture2, new Vector2(t2.y, t2.y));
-							if (t2.y == 0)
-								mat.SetTextureScale(ChaShader._Texture2, new Vector2(t2.x, t2.x));
-							if (t2.x == 0 && t2.y == 0)
-								mat.SetTextureScale(ChaShader._Texture2, new Vector2(1, 1));
-							*/
-							if (mat.GetTexture(ChaShader._Texture3) == null || CfgLiquidOverride.Value)
-								mat.SetTexture(ChaShader._Texture3, LiquidN);
-							/*
-							Vector2 t3 = mat.GetTextureScale(ChaShader._Texture3);
-							if (t3.x == 0)
-								mat.SetTextureScale(ChaShader._Texture2, new Vector2(t3.y, t3.y));
-							if (t3.y == 0)
-								mat.SetTextureScale(ChaShader._Texture2, new Vector2(t3.x, t3.x));
-							if (t3.x == 0 && t3.y == 0)
-								mat.SetTextureScale(ChaShader._Texture2, new Vector2(1, 1));
-							*/
 						}
 					}
 				};
@@ -230,17 +207,17 @@ namespace CumOnOver
 				{
 					if (!mat.HasProperty(ChaShader._liquidface)) continue;
 
+					if (mat.GetTexture(ChaShader._Texture2) == null || CfgLiquidOverride.Value)
+						mat.SetTexture(ChaShader._Texture2, LiquidT);
+
+					if (mat.GetTexture(ChaShader._Texture3) == null || CfgLiquidOverride.Value)
+						mat.SetTexture(ChaShader._Texture3, LiquidN);
+
 					mat.SetFloat(ChaShader._liquidface, chaCtrl.fileStatus.siruLv[0]);
 					mat.SetFloat(ChaShader._liquidftop, chaCtrl.fileStatus.siruLv[1]);
 					mat.SetFloat(ChaShader._liquidfbot, chaCtrl.fileStatus.siruLv[2]);
 					mat.SetFloat(ChaShader._liquidbtop, chaCtrl.fileStatus.siruLv[3]);
 					mat.SetFloat(ChaShader._liquidbbot, chaCtrl.fileStatus.siruLv[4]);
-					/*
-					if (mat.GetTexture(ChaShader._Texture2) == null)
-						mat.SetTexture(ChaShader._Texture2, LiquidT);
-					if (mat.GetTexture(ChaShader._Texture3) == null)
-						mat.SetTexture(ChaShader._Texture3, LiquidN);
-					*/
 				}
 			}
 		}
